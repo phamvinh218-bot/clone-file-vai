@@ -1,0 +1,14 @@
+When a webhook POST arrives, read its JSON body. It is an applique job dispatch from the xưởng Vinh app, contract clone-file-vai.job-dispatch.v1. HTTP 200 from that webhook only means this run started. The job is not finished until you call complete_job or fail_job.
+
+Use the MCP server the operator connected. Do not invent a model API call, and do not assume a standalone API has this bot's memory. The body contains jobId, specVersion, and mcpUrl. It does not contain secrets. If mcpUrl is localhost or a private address, stop and say the app is not reachable. Do not try a tunnel.
+
+Then:
+1. get_job. Follow specVersion applique-layout/1. Allowance is 10 mm outside every side, not the historical 20 mm NURSE sample. One distinct pattern means one continuous sheet. Two or more distinct patterns mean one panel per piece in reference order, including repeated patterns. Use the returned geometry, holes, and panel sizes. Do not remeasure from the artboard.
+2. claim_job.
+3. create_source_download for the mockup and the vector. Read inline bytes when the tool returns them. Use a signed URL only when the tool says the origin is public. Never fetch an arbitrary URL.
+4. Reconstruct appearance only. Stripe, check, dot, and star patterns should be sharp and procedural. Floral art may use your own image tools. Colors and motifs are approximate. Do not claim an exact recovery or a seamless repeat. Do not add laser fiducials or camera marks.
+5. If printReady is false, label the result as a preview, not a print file.
+6. create_artifact_upload separately for print_png, print_pdf, and proof_png. POST the bytes to the granted upload URL with Authorization: Bearer grantToken. The server will not fetch a URL for you. If reachability is local_process_only, stop and fail_job with code origin_unreachable. Do not pretend the upload worked.
+7. complete_job with a new idempotency key only after all three artifacts are accepted. If anything fails, fail_job. Never call complete_job after fail_job.
+
+The proof is a separate image with contours and dimensions. The clean PNG and the actual-size PDF are the print pair. This app does not draw those images for you.

@@ -1,0 +1,52 @@
+{
+  "version": "clone-file-vai.mcp/1",
+  "protocolVersions": ["2025-06-18", "2025-03-26"],
+  "endpointPath": "/api/mcp",
+  "transport": "streamable-http",
+  "stdioCommand": "npm run mcp:stdio",
+  "authorization": "Bearer BOT_WORKER_TOKEN",
+  "officialSources": [
+    "https://modelcontextprotocol.io/specification/2025-06-18/basic/transports",
+    "https://docs.x.ai/grok-bot/computer-and-apps",
+    "https://docs.x.ai/grok/connectors",
+    "https://docs.x.ai/developers/tools/remote-mcp"
+  ],
+  "authNote": "Grok Bot docs say a bot can add an MCP server by public URL or by a command that runs on the bot's own computer, then complete authentication. They do not publish the connector form's header name. The Grok API remote-MCP parameter `authorization` is documented to be sent as Authorization: Bearer, but that is a different API surface and is not a substitute for this bot. This server fail-closes unless Authorization: Bearer matches BOT_WORKER_TOKEN.",
+  "tools": [
+    {
+      "name": "list_jobs",
+      "description": "List jobs a worker may claim. Drafts and other staff's private edits are omitted.",
+      "required": []
+    },
+    {
+      "name": "get_job",
+      "description": "Fetch one worker-visible job, including geometry, the versioned layout spec, and artifact status. Does not include file bytes.",
+      "required": ["jobId"]
+    },
+    {
+      "name": "claim_job",
+      "description": "Take a lease on a dispatched job, or replace an expired lease. Refuses an active lease.",
+      "required": ["jobId"]
+    },
+    {
+      "name": "create_source_download",
+      "description": "Read one mockup or vector through the authenticated MCP connection. Small files are returned inline. A signed URL is added only when APP_ORIGIN is a public https origin.",
+      "required": ["jobId", "assetId"]
+    },
+    {
+      "name": "create_artifact_upload",
+      "description": "Mint a one-time upload grant for print_png, print_pdf, or proof_png. POST the bytes to uploadUrl with Authorization: Bearer grantToken. The server never fetches a URL.",
+      "required": ["jobId", "leaseId", "artifactKind"]
+    },
+    {
+      "name": "complete_job",
+      "description": "Mark a leased job complete after all three artifacts exist. Idempotent. Refuses a failed job.",
+      "required": ["jobId", "leaseId", "idempotencyKey"]
+    },
+    {
+      "name": "fail_job",
+      "description": "Mark a leased job failed. Idempotent. Refuses a completed job.",
+      "required": ["jobId", "leaseId", "idempotencyKey", "code", "message"]
+    }
+  ]
+}
