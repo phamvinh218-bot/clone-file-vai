@@ -84,8 +84,8 @@ function svg(body: string, width = "100mm", height = "80mm", view = "0 0 100 80"
 }
 
 describe("vector bounds, not artboard", () => {
-  it("applies transforms and ignores the viewBox size", () => {
-    const parsed = parseVectorFile("letter.svg", svg(`<g transform="translate(15 5)"><rect x="0" y="0" width="20" height="10"/></g>`));
+  it("applies transforms and ignores the viewBox size", async () => {
+    const parsed = await parseVectorFile("letter.svg", svg(`<g transform="translate(15 5)"><rect x="0" y="0" width="20" height="10"/></g>`));
     expect(parsed.hasPhysicalUnit).toBe(true);
     expect(parsed.artboard?.width).toBe(100);
     expect(parsed.pieces).toHaveLength(1);
@@ -95,8 +95,8 @@ describe("vector bounds, not artboard", () => {
     expect(parsed.pieces[0].bbox.height).toBeCloseTo(10, 3);
   });
 
-  it("applies a transform list from right to left", () => {
-    const parsed = parseVectorFile(
+  it("applies a transform list from right to left", async () => {
+    const parsed = await parseVectorFile(
       "scale.svg",
       svg(`<rect x="0" y="0" width="10" height="10" transform="translate(10 0) scale(2)"/>`, "80mm", "80mm", "0 0 80 80"),
     );
@@ -105,8 +105,8 @@ describe("vector bounds, not artboard", () => {
     expect(parsed.pieces[0].bbox.height).toBeCloseTo(20, 3);
   });
 
-  it("keeps an inner hole inside one piece", () => {
-    const parsed = parseVectorFile("hole.svg", svg(`<path d="M10 10 H70 V60 H10 Z M20 20 H40 V40 H20 Z"/>`));
+  it("keeps an inner hole inside one piece", async () => {
+    const parsed = await parseVectorFile("hole.svg", svg(`<path d="M10 10 H70 V60 H10 Z M20 20 H40 V40 H20 Z"/>`));
     expect(parsed.pieces).toHaveLength(1);
     expect(parsed.pieces[0].holes).toHaveLength(1);
     expect(parsed.pieces[0].bbox.width).toBeCloseTo(60, 3);
@@ -114,8 +114,8 @@ describe("vector bounds, not artboard", () => {
     expect(parsed.artboard?.width).not.toBeCloseTo(parsed.pieces[0].bbox.width, 0);
   });
 
-  it("uses cubic extrema rather than the endpoints", () => {
-    const parsed = parseVectorFile(
+  it("uses cubic extrema rather than the endpoints", async () => {
+    const parsed = await parseVectorFile(
       "curve.svg",
       svg(`<path d="M0 0 C0 40 10 40 10 0"/>`, "20mm", "40mm", "0 0 20 40"),
     );
@@ -123,8 +123,8 @@ describe("vector bounds, not artboard", () => {
     expect(parsed.pieces[0].bbox.height).toBeLessThan(35);
   });
 
-  it("includes the bulge of an arc", () => {
-    const parsed = parseVectorFile(
+  it("includes the bulge of an arc", async () => {
+    const parsed = await parseVectorFile(
       "arc.svg",
       svg(`<path d="M0 10 A10 10 0 0 1 20 10"/>`, "30mm", "30mm", "0 0 30 30"),
     );
@@ -132,23 +132,23 @@ describe("vector bounds, not artboard", () => {
     expect(parsed.pieces[0].bbox.height).toBeGreaterThan(5);
   });
 
-  it("does not treat a px file as print-scaled millimetres", () => {
-    const parsed = parseVectorFile("preview.svg", svg(`<rect x="5" y="5" width="30" height="20"/>`, "100", "80"));
+  it("does not treat a px file as print-scaled millimetres", async () => {
+    const parsed = await parseVectorFile("preview.svg", svg(`<rect x="5" y="5" width="30" height="20"/>`, "100", "80"));
     expect(parsed.hasPhysicalUnit).toBe(false);
     expect(parsed.unitName).toBe("file_unit");
     expect(parsed.pieces[0].bbox).toMatchObject({ x: 5, y: 5, width: 30, height: 20 });
   });
 
-  it("rejects active SVG and non-PDF Illustrator files", () => {
-    expect(() => parseVectorFile("bad.svg", svg(`<script>alert(1)</script><rect width="30" height="30"/>`))).toThrow(AppError);
-    expect(() => parseVectorFile("art.ai", Buffer.from("%!PS-Adobe-3.0\n%%Creator: Adobe Illustrator\n"))).toThrow(
+  it("rejects active SVG and non-PDF Illustrator files", async () => {
+    await expect(parseVectorFile("bad.svg", svg(`<script>alert(1)</script><rect width="30" height="30"/>`))).rejects.toBeInstanceOf(AppError);
+    await expect(parseVectorFile("art.ai", Buffer.from("%!PS-Adobe-3.0\n%%Creator: Adobe Illustrator\n"))).rejects.toThrow(
       /PDF hoặc SVG/,
     );
   });
 
-  it("reads path bounds from a PDF and from a PDF-compatible AI file, ignoring the media box", () => {
+  it("reads path bounds from a PDF and from a PDF-compatible AI file, ignoring the media box", async () => {
     const pdf = pdfWith(`10 20 30 40 re\nh\nf\n`, [0, 0, 400, 300]);
-    const parsed = parseVectorFile("cut.pdf", pdf);
+    const parsed = await parseVectorFile("cut.pdf", pdf);
     const mm = 25.4 / 72;
     expect(parsed.artboard?.width).toBeCloseTo(400 * mm, 3);
     expect(parsed.pieces).toHaveLength(1);
@@ -156,28 +156,90 @@ describe("vector bounds, not artboard", () => {
     expect(parsed.pieces[0].bbox.height).toBeCloseTo(40 * mm, 3);
     expect(parsed.pieces[0].bbox.width).toBeLessThan(parsed.artboard!.width / 2);
 
-    const ai = parseVectorFile("cut.ai", pdf);
+    const ai = await parseVectorFile("cut.ai", pdf);
     expect(ai.format).toBe("ai_pdf");
     expect(ai.pieces[0].bbox.width).toBeCloseTo(30 * mm, 3);
   });
 
-  it("applies a PDF transformation matrix", () => {
+  it("applies a PDF transformation matrix", async () => {
     const pdf = pdfWith(`q\n2 0 0 2 100 50 cm\n0 0 10 10 re\nh\nf\nQ\n`, [0, 0, 500, 400]);
-    const parsed = parseVectorFile("moved.pdf", pdf);
+    const parsed = await parseVectorFile("moved.pdf", pdf);
     const mm = 25.4 / 72;
     expect(parsed.pieces[0].bbox.width).toBeCloseTo(20 * mm, 2);
     expect(parsed.pieces[0].bbox.height).toBeCloseTo(20 * mm, 2);
   });
 
-  it("ignores PDF text and keeps a compound hole", () => {
+  it("ignores PDF text and keeps a compound hole", async () => {
     const pdf = pdfWith(`BT\n(HELLO) Tj\nET\n10 10 80 60 re\nh\n30 30 20 20 re\nh\nf\n`, [0, 0, 320, 200]);
-    const parsed = parseVectorFile("letter.pdf", pdf);
+    const parsed = await parseVectorFile("letter.pdf", pdf);
     expect(parsed.warnings.some((warning) => warning.code === "excluded_text")).toBe(true);
     expect(parsed.pieces).toHaveLength(1);
     expect(parsed.pieces[0].holes.length).toBe(1);
     expect(parsed.pieces[0].bbox.width).toBeCloseTo(80 * (25.4 / 72), 2);
   });
+
+  it("reads standard PDF filters and ignores an image predictor and the artboard", async () => {
+    const { deflateSync } = await import("node:zlib");
+    const plain = Buffer.from("10 20 30 40 re\nh\nf\n");
+    const flate = deflateSync(plain);
+    const mm = 25.4 / 72;
+    for (const dict of ["/Filter /FlateDecode", "/Filter [/FlateDecode]"]) {
+      const parsed = await parseVectorFile("flate.ai", filteredPdf(dict, flate, [0, 0, 400, 300]));
+      expect(parsed.pieces).toHaveLength(1);
+      expect(parsed.pieces[0].bbox.width).toBeCloseTo(30 * mm, 2);
+      expect(parsed.pieces[0].bbox.width).toBeLessThan(parsed.artboard!.width / 2);
+    }
+    const hex = Buffer.from(plain.toString("hex"));
+    const hexParsed = await parseVectorFile("hex.pdf", filteredPdf("/Filter /ASCIIHexDecode", hex, [0, 0, 400, 300]));
+    expect(hexParsed.pieces[0].bbox.height).toBeCloseTo(40 * mm, 2);
+
+    const predictor = deflateSync(Buffer.from([0, 1, 0, 1]));
+    const sidecar = Buffer.concat([
+      filteredPdf("", plain, [0, 0, 400, 300]),
+      Buffer.from(`6 0 obj\n<< /Length ${predictor.length} /Filter /FlateDecode /Predictor 15 /Columns 1 >>\nstream\n`),
+      predictor,
+      Buffer.from("\nendstream\nendobj\n"),
+    ]);
+    const kept = await parseVectorFile("thumb.ai", sidecar);
+    expect(kept.pieces).toHaveLength(1);
+    expect(kept.pieces[0].bbox.width).toBeCloseTo(30 * mm, 2);
+
+    await expect(parseVectorFile("custom.ai", filteredPdf("/Filter /FooDecode", Buffer.from("not-vector-data-xxxxxxxx"), [0, 0, 900, 900]))).rejects.toThrow(
+      /FooDecode/,
+    );
+  });
+
+  it("reads a path stored in a form XObject instead of the form bounding box", async () => {
+    const formBody = Buffer.from("0 0 12 8 re\nh\nf\n");
+    const pageStream = Buffer.from("q\n1 0 0 1 20 30 cm\n/Fm Do\nQ\n");
+    const pdf = Buffer.concat([
+      Buffer.from(
+        `%PDF-1.4\n1 0 obj\n<< /Type /Catalog /Pages 2 0 R >>\nendobj\n2 0 obj\n<< /Type /Pages /Kids [3 0 R] /Count 1 >>\nendobj\n3 0 obj\n<< /Type /Page /Parent 2 0 R /MediaBox [0 0 400 300] /Contents 4 0 R /Resources << /XObject << /Fm 5 0 R >> >> >>\nendobj\n4 0 obj\n<< /Length ${pageStream.length} >>\nstream\n`,
+      ),
+      pageStream,
+      Buffer.from("\nendstream\nendobj\n"),
+      Buffer.from(`5 0 obj\n<< /Type /XObject /Subtype /Form /BBox [0 0 100 100] /Length ${formBody.length} >>\nstream\n`),
+      formBody,
+      Buffer.from("\nendstream\nendobj\ntrailer\n<< /Root 1 0 R >>\n%%EOF\n"),
+    ]);
+    const parsed = await parseVectorFile("form.ai", pdf);
+    const mm = 25.4 / 72;
+    expect(parsed.pieces).toHaveLength(1);
+    expect(parsed.pieces[0].bbox.width).toBeCloseTo(12 * mm, 2);
+    expect(parsed.pieces[0].bbox.height).toBeCloseTo(8 * mm, 2);
+    expect(parsed.pieces[0].bbox.width).toBeLessThan(100 * mm);
+  });
 });
+
+function filteredPdf(dict: string, body: Buffer, media: number[]): Buffer {
+  return Buffer.concat([
+    Buffer.from(
+      `%PDF-1.4\n1 0 obj\n<< /Type /Catalog /Pages 2 0 R >>\nendobj\n2 0 obj\n<< /Type /Pages /Kids [3 0 R] /Count 1 >>\nendobj\n3 0 obj\n<< /Type /Page /Parent 2 0 R /MediaBox [${media.join(" ")}] /Contents 4 0 R >>\nendobj\n4 0 obj\n<< /Length ${body.length} ${dict} >>\nstream\n`,
+    ),
+    body,
+    Buffer.from("\nendstream\nendobj\ntrailer\n<< /Root 1 0 R >>\n%%EOF\n"),
+  ]);
+}
 
 function pdfWith(content: string, media: number[]): Buffer {
   const stream = Buffer.from(content);

@@ -37,6 +37,7 @@ Version: `applique-layout/1` in `src/spec/applique-layout.v1.json`.
 - Two or more distinct patterns: one panel per piece, in file order, including a pattern that repeats.
 - Bounds come from transformed path geometry, including holes. The artboard or viewBox is not the cut size.
 - A non-PDF `.ai` file is rejected. Save a PDF or SVG by hand.
+- PDF-compatible AI is read with PDF.js. Content streams may use FlateDecode, LZWDecode, ASCII85Decode, ASCIIHexDecode, RunLengthDecode, including filter arrays. Image predictors on streams that are not the cut paths do not by themselves reject the file. An unknown filter such as a custom `/Filter` name is rejected in Vietnamese, and the page size is not used as the piece size. The exact Illustrator file that failed on Windows, and the historical NURSE `.ai`, are not in this repo yet.
 - Nominal 1:1 needs a physical unit in the file (mm, cm, in, or pt) and the staff checkbox. Otherwise the job stays a preview.
 - Allowance is 10 mm outside every side (20 mm added to width and height). At 300 PPI the margin is `ceil(10 / 25.4 * 300) = 119` px, and bbox extents are ceiled the same way. The historical NURSE sample used 20 mm (237 px). New jobs do not.
 

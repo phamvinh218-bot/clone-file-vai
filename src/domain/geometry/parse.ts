@@ -3,7 +3,7 @@ import { parsePdf } from "@/domain/geometry/pdf";
 import { parseSvg } from "@/domain/geometry/svg";
 import type { VectorParse } from "@/domain/geometry/model";
 
-export function parseVectorFile(filename: string, bytes: Buffer): VectorParse {
+export async function parseVectorFile(filename: string, bytes: Buffer): Promise<VectorParse> {
   const lower = filename.trim().toLowerCase();
   const head = bytes.subarray(0, Math.min(bytes.length, 16)).toString("latin1");
   if (lower.endsWith(".ai")) {

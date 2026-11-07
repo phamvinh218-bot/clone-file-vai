@@ -1,7 +1,7 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
-  serverExternalPackages: [],
+  serverExternalPackages: ["pdfjs-dist"],
   poweredByHeader: false,
   async headers() {
     return [

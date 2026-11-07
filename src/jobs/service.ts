@@ -100,7 +100,7 @@ export class JobService {
     if (!title || title.length > LIMITS.titleChars) throw new AppError("invalid_title", "Thiếu tên việc hoặc tên quá dài.", 422);
     const mockup = validateMockup(input.mockup.filename, input.mockup.bytes);
     const vectorMeta = validateVectorUpload(input.vector.filename, input.vector.bytes);
-    const parse = parseVectorFile(vectorMeta.filename, input.vector.bytes);
+    const parse = await parseVectorFile(vectorMeta.filename, input.vector.bytes);
     const readiness = assessReadiness(parse, input.scaleConfirmed);
     const now = this.iso();
     const jobId = randomUUID();

@@ -174,20 +174,33 @@ export async function handleCreateStaff(req: Request): Promise<Response> {
   }
 }
 
+export function newJobRetryQuery(code: string, title: string, scaleConfirmed: boolean): string {
+  const params = new URLSearchParams();
+  params.set("error", code);
+  const clean = title.replace(/[\u0000-\u001f]/g, "").slice(0, 120);
+  if (clean) params.set("title", clean);
+  if (scaleConfirmed) params.set("scale", "1");
+  return params.toString();
+}
+
 export async function handleCreateJob(req: Request): Promise<Response> {
+  let formTitle = "";
+  let scaleConfirmed = false;
   try {
     assertSameOrigin(req);
     const rt = await runtime();
     const services = requireServices(rt);
     const owner = await requireStaff(req, rt);
     const form = await req.formData();
+    formTitle = String(form.get("title") ?? "");
+    scaleConfirmed = form.get("scaleConfirmed") === "on" || form.get("scaleConfirmed") === "true";
     const mockup = form.get("mockup");
     const vector = form.get("vector");
     if (!(mockup instanceof File) || !(vector instanceof File)) throw new AppError("missing_file", "Cần đủ ảnh mockup và file vector.", 422);
     const job = await services.createJob({
       ownerId: owner,
-      title: String(form.get("title") ?? ""),
-      scaleConfirmed: form.get("scaleConfirmed") === "on" || form.get("scaleConfirmed") === "true",
+      title: formTitle,
+      scaleConfirmed,
       idempotencyKey: req.headers.get("idempotency-key"),
       mockup: { filename: mockup.name, bytes: Buffer.from(await mockup.arrayBuffer()) },
       vector: { filename: vector.name, bytes: Buffer.from(await vector.arrayBuffer()) },
@@ -196,7 +209,9 @@ export async function handleCreateJob(req: Request): Promise<Response> {
     const assets = await rt.store!.listAssets(job.id);
     return Response.json(presentJob(job, assets), { status: 201 });
   } catch (error) {
-    if (wantsHtml(req) && isAppError(error)) return redirect(req, `/jobs/new?error=${error.code}`);
+    if (wantsHtml(req) && isAppError(error)) {
+      return redirect(req, `/jobs/new?${newJobRetryQuery(error.code, formTitle, scaleConfirmed)}`);
+    }
     return errorResponse(error);
   }
 }
