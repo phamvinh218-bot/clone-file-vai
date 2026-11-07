@@ -1,0 +1,18 @@
+{
+  "version": "applique-layout/1",
+  "ppi": 300,
+  "allowanceMmEachSide": 10,
+  "historicalReferenceAllowanceMmEachSide": 20,
+  "historicalReferenceNote": "The NURSE sample was built with a 20mm allowance. New jobs use 10mm. Do not copy the historical margin.",
+  "marginRule": "marginPx = ceil(allowanceMmEachSide / 25.4 * ppi) on every side",
+  "extentRule": "contentPx = ceil(bboxMm / 25.4 * ppi); panelPx = contentPx + 2 * marginPx",
+  "coverageRule": "Ceil both the margin and the bbox extent so each side is at least the nominal allowance and the piece cannot fall outside the pixel canvas.",
+  "oneDistinctPattern": "One continuous sheet covering every piece in file coordinates, with the allowance outside every side of the union.",
+  "multipleDistinctPatterns": "A separate panel for every piece, in reference order, including pieces whose pattern key repeats.",
+  "appliqueOnly": true,
+  "embroideredTextIsNotAPiece": true,
+  "noLaserFiducials": true,
+  "nominalScale": "Vector units are treated as physical only when the file itself uses mm, cm, in, or pt. Staff confirmation is also required. Without that, output is a preview and is not print-ready.",
+  "appearanceRule": "The web app does not invent fabric rendering. Stripe, check, dot, and star patterns should be reconstructed procedurally by the bot. Floral artwork may use the bot's own image tools. Colors and motifs are approximate. Do not claim exact recovery or a seamless repeat.",
+  "outputs": ["print_png", "print_pdf", "proof_png"]
+}

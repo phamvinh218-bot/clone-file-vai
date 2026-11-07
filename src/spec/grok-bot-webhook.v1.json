@@ -1,0 +1,32 @@
+{
+  "version": "clone-file-vai.job-dispatch.v1",
+  "officialSources": [
+    "https://cursor.com/help/grok-bot/routines",
+    "https://docs.x.ai/grok-bot/skills-routines-and-automations"
+  ],
+  "documented": {
+    "method": "POST",
+    "authorizationScheme": "Bearer",
+    "body": "optional JSON; the bot receives the body with the routine instruction",
+    "successStatus": 200,
+    "successMeans": "dispatch_accepted_run_started",
+    "successDoesNotMean": "job_finished",
+    "otherStatuses": "a run did not start"
+  },
+  "notDocumented": {
+    "providerPayloadSchema": "The help pages do not require a particular JSON shape. The payload below is this application's contract, not a provider schema.",
+    "providerResponseBody": "No response body schema is published. This app records the HTTP status and does not read a success flag from the body."
+  },
+  "applicationPayload": {
+    "contract": "clone-file-vai.job-dispatch.v1",
+    "event": "applique_job.ready",
+    "required": ["contract", "event", "jobId", "specVersion", "mcpUrl"],
+    "forbiddenKeys": ["webhookKey", "workerToken", "authorization", "password", "secret"]
+  },
+  "compatibility": {
+    "transportAuthorizationAndHttp200": "documented",
+    "payloadSchema": "application-defined",
+    "responseBody": "unverified_ignored",
+    "grokBotCustomMcpAuthUi": "unverified"
+  }
+}
