@@ -43,8 +43,8 @@ export function loadConfig(env: NodeJS.ProcessEnv): AppConfig {
     webhookKeyRaw.length > 0 && (webhookKeyRaw !== webhookKeyRaw.trim() || /[\r\n]/.test(webhookKeyRaw) || webhookKeyRaw.trim().length < 8);
   const webhookKey = webhookKeyInvalid ? "" : webhookKeyRaw.trim();
   const email = env.STAFF_BOOTSTRAP_EMAIL?.trim().toLowerCase() ?? "";
-  const password = env.STAFF_BOOTSTRAP_PASSWORD ?? "";
-  const bootstrapInvalid = Boolean(email || password) && (!email.includes("@") || password.trim().length < LIMITS.passwordMin);
+  const password = (env.STAFF_BOOTSTRAP_PASSWORD ?? "").replace(/\r/g, "").trim();
+  const bootstrapInvalid = Boolean(env.STAFF_BOOTSTRAP_EMAIL || env.STAFF_BOOTSTRAP_PASSWORD) && (!email.includes("@") || password.length < LIMITS.passwordMin);
   const leaseRaw = Number(env.JOB_LEASE_SECONDS ?? LIMITS.leaseSecondsDefault);
   return {
     nodeEnv,
@@ -121,7 +121,12 @@ export function setupGates(
     {
       name: "STAFF_BOOTSTRAP_EMAIL",
       ok: !config.bootstrapInvalid && (extras.userCount === null || extras.userCount > 0 || Boolean(config.bootstrap)),
-      detail: "Creates the first staff user only when the user table is empty.",
+      detail:
+        extras.userCount && extras.userCount > 0
+          ? "A staff account is already stored. Changing STAFF_BOOTSTRAP_EMAIL or STAFF_BOOTSTRAP_PASSWORD does not change that password."
+          : config.bootstrapInvalid
+            ? "Bootstrap email or password is unusable. The email must contain @ and the password must be at least 12 characters. Values are not shown."
+            : "Creates the first staff user only when the user table is empty.",
     },
   ];
 }

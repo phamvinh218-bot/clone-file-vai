@@ -155,7 +155,34 @@ JOB_LEASE_SECONDS=900
 "@ | Set-Content -Encoding ascii .env.local
 ```
 
-Edit `.env.local` and replace `STAFF_BOOTSTRAP_PASSWORD` before the next commands. The generated secrets stay in that ignored file. Do not paste the webhook key or the worker token into chat.
+Edit `.env.local` and replace `STAFF_BOOTSTRAP_PASSWORD` before the first `npm run dev`. The generated secrets stay in that ignored file. Do not paste the webhook key or the worker token into chat.
+
+`STAFF_BOOTSTRAP_EMAIL` and `STAFF_BOOTSTRAP_PASSWORD` create the first staff row only when the user table is empty. A later edit to `.env.local` does not change the stored password. The setup row stays ready once any account exists. `Sai email hoặc mật khẩu` means the stored account rejected the typed pair.
+
+Check that without opening the database by hand:
+
+```powershell
+cd "C:\Job\DLLT - learning\clone-file-vai"
+$env:ACCOUNT_LOCAL = "1"
+npm run account:status
+```
+
+The JSON shows user count, whether bootstrap is present, and whether startup would create a user. It does not show passwords, hashes, or tokens. `startupChangesExistingPassword` is always false.
+
+To set a new password for one existing account, leave `data\` in place and run this in the same window. The prompt is hidden. Do not put the password in the command.
+
+```powershell
+npm run account:reset -- vinh@localhost
+```
+
+Type the new password, press Enter, type it again, and press Enter. Then:
+
+```powershell
+Remove-Item Env:ACCOUNT_LOCAL
+npm run dev
+```
+
+Open `http://localhost:3000/login` and sign in with that new password. Jobs and any other staff account stay as they are. The command refuses `NODE_ENV=production`, a public `APP_ORIGIN`, and a non-sqlite store.
 
 ```powershell
 npm test

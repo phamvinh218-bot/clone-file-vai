@@ -12,7 +12,9 @@
     "lint": "next lint",
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
-    "mcp:stdio": "tsx src/mcp/stdio.ts"
+    "mcp:stdio": "tsx src/mcp/stdio.ts",
+    "account:status": "tsx src/account/status-cli.ts",
+    "account:reset": "tsx src/account/reset-cli.ts"
   },
   "dependencies": {
     "fast-xml-parser": "^4.5.3",

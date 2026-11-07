@@ -36,6 +36,7 @@ export interface Store {
   readonly storageLabel: string;
   close(): Promise<void>;
   createUser(user: UserRow): Promise<void>;
+  replacePasswordHash(email: string, passwordHash: string): Promise<boolean>;
   findUserByEmail(email: string): Promise<UserRow | null>;
   getUser(id: string): Promise<UserRow | null>;
   countUsers(): Promise<number>;

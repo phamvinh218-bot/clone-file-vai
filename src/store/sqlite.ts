@@ -111,6 +111,17 @@ export function openSqliteStore(dataDir: string): Store {
         user.createdAt,
       );
     },
+    async replacePasswordHash(email, passwordHash) {
+      db.exec("BEGIN IMMEDIATE");
+      try {
+        const info = db.prepare("UPDATE users SET password_hash = ? WHERE email = ?").run(passwordHash, email);
+        db.exec("COMMIT");
+        return Number(info.changes) === 1;
+      } catch (error) {
+        db.exec("ROLLBACK");
+        throw error;
+      }
+    },
     async findUserByEmail(email) {
       const row = db.prepare("SELECT * FROM users WHERE email = ?").get(email) as Record<string, unknown> | undefined;
       if (!row) return null;

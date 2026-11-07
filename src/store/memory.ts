@@ -28,6 +28,12 @@ export function createMemoryStore(): Store {
       }
       users.set(user.id, user);
     },
+    async replacePasswordHash(email, passwordHash) {
+      const user = [...users.values()].find((row) => row.email === email);
+      if (!user) return false;
+      users.set(user.id, { ...user, passwordHash });
+      return true;
+    },
     async findUserByEmail(email) {
       return [...users.values()].find((row) => row.email === email) ?? null;
     },

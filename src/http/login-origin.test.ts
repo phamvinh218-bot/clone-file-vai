@@ -109,6 +109,7 @@ describe("login origin", () => {
 
 describe("referrer policy", () => {
   it("does not use no-referrer, which the Fetch standard turns into Origin null on form POST", async () => {
+    if (!nextConfig.headers) throw new Error("headers missing");
     const rules = await nextConfig.headers();
     const policy = rules.flatMap((rule) => rule.headers).find((header) => header.key === "Referrer-Policy");
     expect(policy?.value).toBe("strict-origin-when-cross-origin");
