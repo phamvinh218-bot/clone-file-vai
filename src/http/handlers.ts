@@ -15,25 +15,72 @@ export function wantsHtml(req: Request): boolean {
 
 export function errorResponse(error: unknown): Response {
   if (isAppError(error)) return Response.json({ error: error.code, message: error.message }, { status: error.httpStatus });
-  console.error(error);
-  return Response.json({ error: "internal", message: "Lỗi nội bộ." }, { status: 500 });
+  logSafeError(error);
+  return Response.json(
+    {
+      error: "internal",
+      message: "Lỗi nội bộ. Hãy tải lại trang đăng nhập và thử lại. Đừng gửi lại từ /api/session.",
+    },
+    { status: 500 },
+  );
+}
+
+/** Log only the error name and code. Messages can contain the submitted email or other request input. */
+export function logSafeError(error: unknown): void {
+  const name = error instanceof Error ? error.name : "Error";
+  const code = error && typeof error === "object" && "code" in error ? String((error as { code?: unknown }).code ?? "") : "";
+  console.error(`[clone-file-vai] ${name}${code ? ` ${code}` : ""}`);
 }
 
 function redirect(req: Request, path: string, cookies: string[] = []): Response {
-  const headers = new Headers({ location: new URL(path, req.url).toString() });
+  let location = path;
+  try {
+    location = new URL(path, req.url).toString();
+  } catch {
+    location = path.startsWith("/") ? path : "/login";
+  }
+  const headers = new Headers({ location });
   for (const cookie of cookies) headers.append("set-cookie", cookie);
   return new Response(null, { status: 303, headers });
 }
 
 function assertSameOrigin(req: Request) {
-  if (req.headers.get("sec-fetch-site") === "cross-site") throw new AppError("csrf", "Yêu cầu khác trang bị từ chối.", 403);
+  const fetchSite = (req.headers.get("sec-fetch-site") ?? "").toLowerCase();
+  if (fetchSite === "cross-site") {
+    throw new AppError("csrf", "Yêu cầu đến từ trang khác. Hãy mở lại trang đăng nhập rồi thử lại.", 403);
+  }
   const origin = req.headers.get("origin");
-  if (!origin) return;
-  const originHost = new URL(origin).host;
+  if (origin == null || origin.trim() === "") {
+    if (fetchSite === "" || fetchSite === "same-origin" || fetchSite === "none" || fetchSite === "same-site") return;
+    throw new AppError("csrf", "Yêu cầu đến từ trang khác. Hãy mở lại trang đăng nhập rồi thử lại.", 403);
+  }
+  if (origin.trim().toLowerCase() === "null") {
+    throw new AppError(
+      "origin_opaque",
+      "Trình duyệt gửi Origin rỗng, nên đăng nhập bị từ chối. Hãy tải lại /login và đăng nhập từ đó. Đừng gửi lại từ /api/session.",
+      403,
+    );
+  }
+  let originUrl: URL;
+  try {
+    originUrl = new URL(origin);
+  } catch {
+    throw new AppError("origin_invalid", "Nguồn trang không phải địa chỉ hợp lệ. Hãy tải lại trang đăng nhập và thử lại.", 403);
+  }
+  if (originUrl.username || originUrl.password || (originUrl.protocol !== "http:" && originUrl.protocol !== "https:")) {
+    throw new AppError("origin_invalid", "Nguồn trang không phải địa chỉ hợp lệ. Hãy tải lại trang đăng nhập và thử lại.", 403);
+  }
+  const originHost = originUrl.host;
   const host = req.headers.get("host");
   if (host && originHost === host) return;
-  if (originHost === new URL(req.url).host) return;
-  throw new AppError("csrf", "Origin không khớp.", 403);
+  let requestHost = "";
+  try {
+    requestHost = new URL(req.url).host;
+  } catch {
+    requestHost = "";
+  }
+  if (requestHost && originHost === requestHost) return;
+  throw new AppError("csrf", "Yêu cầu đến từ trang khác. Hãy mở lại trang đăng nhập rồi thử lại.", 403);
 }
 
 function requireServices(rt: Runtime) {
@@ -56,7 +103,11 @@ async function requireStaff(req: Request, rt: Runtime): Promise<string> {
 }
 
 function secure(req: Request): boolean {
-  return new URL(req.url).protocol === "https:";
+  try {
+    return new URL(req.url).protocol === "https:";
+  } catch {
+    return false;
+  }
 }
 
 export async function handleSetup(): Promise<Response> {
@@ -86,7 +137,11 @@ export async function handleLogin(req: Request): Promise<Response> {
     if (wantsHtml(req)) return redirect(req, "/jobs", [cookie]);
     return Response.json({ id: user.id, email: user.email }, { headers: { "set-cookie": cookie } });
   } catch (error) {
-    if (wantsHtml(req) && isAppError(error)) return redirect(req, `/login?error=${error.code}`);
+    if (wantsHtml(req)) {
+      if (!isAppError(error)) logSafeError(error);
+      const code = isAppError(error) ? error.code : "internal";
+      return redirect(req, `/login?error=${encodeURIComponent(code)}`);
+    }
     return errorResponse(error);
   }
 }

@@ -9,7 +9,10 @@ const nextConfig: NextConfig = {
         source: "/:path*",
         headers: [
           { key: "X-Content-Type-Options", value: "nosniff" },
-          { key: "Referrer-Policy", value: "no-referrer" },
+          // no-referrer makes browsers send Origin: null on a same-origin form POST
+// (Fetch: append a request Origin header). Login then crashes on new URL("null").
+// strict-origin-when-cross-origin keeps the real origin for this http://localhost POST.
+{ key: "Referrer-Policy", value: "strict-origin-when-cross-origin" },
           { key: "X-Frame-Options", value: "DENY" },
           {
             key: "Content-Security-Policy",

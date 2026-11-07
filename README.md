@@ -26,6 +26,8 @@ SQLite on a laptop is durable across restarts of `npm run dev`. It is not a subs
 
 The browser policy allows inline scripts and inline styles because the Next.js app router boots the page that way. Other script hosts, frames, and plugins stay blocked. Uploaded SVG is downloaded as an attachment, not rendered as a page.
 
+`Referrer-Policy` is `strict-origin-when-cross-origin`. The Fetch standard turns `no-referrer` into the literal header `Origin: null` on a same-origin form POST, and login was rejecting that as an invalid URL. An opaque `null` origin is still refused; it is not treated as same-origin. After pulling this fix, restart `npm run dev` and open `/login` again. Do not resubmit the `/api/session` page.
+
 ## Layout rule
 
 Version: `applique-layout/1` in `src/spec/applique-layout.v1.json`.
